@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Studio Apollo — Atelê de artes em Brasília</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --cream: #f5f0e8; --parchment: #ede5d4; --clay: #c4956a;
+      --terracotta: #9c5c38; --charcoal: #2b2420; --ink: #1a1210;
+      --gold: #b8955a; --muted: #7a6a5e;
+    }
+    html { scroll-behavior: smooth; }
+    body { background: var(--cream); color: var(--ink); font-family: 'Jost', sans-serif; font-weight: 300; overflow-x: hidden; }
+
+    /* ── HERO ── */
+    .hero { position: relative; width: 100%; overflow: hidden; background: var(--charcoal); }
+    .hero-img { display: block; width: 100%; max-height: 92vh; object-fit: cover; object-position: center top; }
+    .hero-overlay { position: absolute; bottom: 0; left: 0; right: 0; height: 40%; background: linear-gradient(to top, rgba(26,18,16,0.9), transparent); pointer-events: none; }
+    .hero-cta-bar { position: absolute; bottom: 2.5rem; left: 0; right: 0; display: flex; justify-content: center; opacity: 0; animation: fadeUp 0.9s 0.6s forwards; }
+    .hero-cta-btn { font-family: 'Jost', sans-serif; font-size: 0.75rem; font-weight: 500; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold); border: 1px solid var(--gold); padding: 1rem 3rem; text-decoration: none; transition: all 0.3s ease; background: rgba(26,18,16,0.5); backdrop-filter: blur(6px); }
+    .hero-cta-btn:hover { background: var(--gold); color: var(--ink); }
+
+    /* ── ABOUT ── */
+    .about-strip { background: var(--parchment); padding: 4.5rem 10vw; border-top: 3px solid var(--gold); }
+    .about-text { font-family: 'Cormorant Garamond', serif; font-size: clamp(1.35rem, 2.5vw, 1.85rem); font-weight: 300; line-height: 1.8; color: var(--charcoal); max-width: 820px; margin: 0 auto; text-align: center; }
+    .about-text strong { font-weight: 600; color: var(--terracotta); }
+
+    /* ── SECTION HEADER ── */
+    .section-header { text-align: center; padding: 0 2rem 4rem; }
+    .section-header p { font-size: 0.7rem; letter-spacing: 0.32em; text-transform: uppercase; color: rgba(245,240,232,0.4); margin-bottom: 0.8rem; }
+    .section-header h2 { font-family: 'Cormorant Garamond', serif; font-size: clamp(2.2rem, 4vw, 3.4rem); font-weight: 300; color: var(--cream); }
+    .section-header h2 span { font-style: italic; color: var(--clay); }
+
+    /* ── COURSES ── */
+    .courses-section { padding: 6rem 0 3rem; background: var(--charcoal); }
+
+    /* Progress bar */
+    .carousel-progress { height: 2px; background: rgba(255,255,255,0.08); margin: 0 8vw 2rem; border-radius: 2px; overflow: hidden; }
+    .carousel-progress-fill { height: 100%; width: 16%; background: var(--gold); border-radius: 2px; transition: width 0.3s ease; }
+
+    /* Carousel outer */
+    .carousel-outer { position: relative; overflow: hidden; padding-bottom: 1rem; }
+
+    .carousel-track {
+      display: flex;
+      padding: 0 8vw 2.5rem;
+      will-change: transform;
+      user-select: none;
+      touch-action: pan-y;
+      cursor: grab;
+    }
+    .carousel-track.snapping { transition: transform 0.42s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+    .carousel-track.dragging { cursor: grabbing; }
+
+    /* End-of-track ghost card — same width as real cards */
+    .carousel-end-ghost {
+      flex: 0 0 calc(25vw - 2rem); min-width: 220px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: #1e1814; border-right: none; align-self: stretch;
+    }
+    .carousel-end-ghost-inner {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 1.2rem; border: 1px solid rgba(184,149,90,0.2); padding: 2.5rem 1.5rem;
+      margin: 2rem; width: calc(100% - 4rem);
+    }
+    .carousel-end-ghost-line { width: 24px; height: 1px; background: rgba(184,149,90,0.3); }
+    .carousel-end-ghost-text {
+      font-family: 'Cormorant Garamond', serif; font-size: 1.15rem; font-weight: 300;
+      font-style: italic; color: rgba(245,240,232,0.28); letter-spacing: 0.08em; text-align: center;
+    }
+
+    /* Peek overlay — always visible as gradient, icon/text only at start */
+    .carousel-peek {
+      position: absolute; top: 0; right: 0; bottom: 2.5rem; width: 13vw;
+      background: linear-gradient(to right, transparent 0%, rgba(43,36,32,0.8) 45%, rgba(43,36,32,0.98) 78%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.7rem;
+      pointer-events: none; z-index: 10;
+    }
+    .carousel-peek-icon { width: 30px; height: 30px; border: 1px solid var(--gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--gold); animation: peekPulse 2s ease-in-out infinite; transition: opacity 0.4s ease; }
+    .carousel-peek-text { font-size: 0.55rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); writing-mode: vertical-rl; line-height: 1.7; transition: opacity 0.4s ease; }
+    .carousel-peek.hide-label .carousel-peek-icon,
+    .carousel-peek.hide-label .carousel-peek-text { opacity: 0; }
+    @keyframes peekPulse { 0%,100% { transform: translateX(0); } 50% { transform: translateX(4px); } }
+
+    /* ── CARD ── */
+    .card {
+      flex: 0 0 calc(25vw - 2rem); min-width: 220px;
+      display: flex; flex-direction: column;
+      background: var(--charcoal); position: relative; overflow: hidden;
+      border-right: 1px solid rgba(255,255,255,0.05);
+    }
+    .card:last-child { border-right: none; }
+    .card-image { width: 100%; height: 260px; overflow: hidden; position: relative; flex-shrink: 0; }
+    .card-image img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s ease; pointer-events: none; }
+    .card:hover .card-image img { transform: scale(1.05); }
+
+    /* "Em breve" image banner */
+    .card-image-soon {
+      width: 100%; height: 100%;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem;
+    }
+    .card-image-soon-badge {
+      font-size: 0.6rem; letter-spacing: 0.3em; text-transform: uppercase;
+      border: 1px solid currentColor; padding: 0.35rem 0.9rem;
+    }
+    .card-image-soon-title {
+      font-family: 'Cormorant Garamond', serif; font-size: 2rem; font-weight: 300;
+      font-style: italic; opacity: 0.5; text-align: center; line-height: 1.2;
+    }
+
+    .card-image-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-family: 'Cormorant Garamond', serif; font-size: 4rem; color: rgba(255,255,255,0.08); }
+    .card-number { position: absolute; top: 0.8rem; left: 1rem; font-family: 'Cormorant Garamond', serif; font-size: 4rem; font-weight: 300; color: rgba(255,255,255,0.05); line-height: 1; pointer-events: none; }
+    .card-tags { position: absolute; top: 0.9rem; right: 0.9rem; display: flex; flex-direction: column; gap: 0.3rem; align-items: flex-end; }
+    .card-tag { font-size: 0.58rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; padding: 0.25rem 0.55rem; display: inline-block; }
+    .card-body { padding: 1.8rem 1.6rem 2.4rem; display: flex; flex-direction: column; flex: 1; gap: 0.9rem; }
+    .card-eyebrow { font-size: 0.6rem; font-weight: 500; letter-spacing: 0.28em; text-transform: uppercase; }
+    .card-title { font-family: 'Cormorant Garamond', serif; font-size: 1.65rem; font-weight: 400; line-height: 1.2; color: var(--cream); }
+    .card-title em { font-style: italic; }
+    .card-desc { font-size: 0.82rem; line-height: 1.9; color: rgba(245,240,232,0.48); flex: 1; }
+    .card-meta { display: flex; flex-direction: column; gap: 0.38rem; border-top: 1px solid rgba(255,255,255,0.07); padding-top: 0.9rem; }
+    .card-meta-item { font-size: 0.72rem; color: rgba(245,240,232,0.33); display: flex; align-items: center; gap: 0.45rem; }
+
+    .card-cta {
+      display: block; margin-top: 1.4rem; padding: 1rem 0; text-align: center;
+      background: transparent; border: 1px solid;
+      font-family: 'Jost', sans-serif; font-size: 0.72rem; font-weight: 500;
+      letter-spacing: 0.26em; text-transform: uppercase;
+      text-decoration: none; cursor: pointer;
+      transition: all 0.3s ease, box-shadow 0.3s ease;
+      position: relative; overflow: hidden;
+    }
+    .card-cta::before { content: ''; position: absolute; inset: 0; transform: translateX(-100%); transition: transform 0.35s ease; z-index: 0; }
+    .card-cta:hover::before { transform: translateX(0); }
+    .card-cta span { position: relative; z-index: 1; }
+
+    /* ── CARD THEMES ── */
+    .card--escultura .card-tag{background:#c4956a;color:var(--ink)}.card--escultura .card-eyebrow,.card--escultura .card-title em{color:#c4956a}.card--escultura .card-meta-item::before{content:'—';color:#c4956a}.card--escultura .card-cta{border-color:#c4956a;color:#c4956a}.card--escultura .card-cta::before{background:#c4956a}.card--escultura .card-cta:hover{color:var(--ink)}.card--escultura .card-cta:not(:hover){animation:g1 3s ease-in-out infinite}
+    @keyframes g1{0%,100%{box-shadow:0 0 4px rgba(196,149,106,.1)}50%{box-shadow:0 0 14px rgba(196,149,106,.4)}}
+
+    .card--modelo .card-tag.tag-presencial{background:#c47a7a;color:var(--cream)}.card--modelo .card-tag.tag-idade{background:#7a2020;color:#ffcccc;border:1px solid #c47a7a;font-weight:600}.card--modelo .card-eyebrow,.card--modelo .card-title em{color:#c47a7a}.card--modelo .card-meta-item::before{content:'—';color:#c47a7a}.card--modelo .card-cta{border-color:#c47a7a;color:#c47a7a}.card--modelo .card-cta::before{background:#c47a7a}.card--modelo .card-cta:hover{color:var(--cream)}.card--modelo .card-cta:not(:hover){animation:g2 3s ease-in-out infinite}
+    @keyframes g2{0%,100%{box-shadow:0 0 4px rgba(196,122,122,.1)}50%{box-shadow:0 0 14px rgba(196,122,122,.4)}}
+
+    .card--ceramica .card-tag{background:#c4a83a;color:var(--ink)}.card--ceramica .card-eyebrow,.card--ceramica .card-title em{color:#c4a83a}.card--ceramica .card-meta-item::before{content:'—';color:#c4a83a}.card--ceramica .card-cta{border-color:#c4a83a;color:#c4a83a}.card--ceramica .card-cta::before{background:#c4a83a}.card--ceramica .card-cta:hover{color:var(--ink)}.card--ceramica .card-cta:not(:hover){animation:g3 3s ease-in-out infinite}
+    @keyframes g3{0%,100%{box-shadow:0 0 4px rgba(196,168,58,.1)}50%{box-shadow:0 0 14px rgba(196,168,58,.4)}}
+
+    .card--lutheria .card-tag{background:#7a9c6a;color:var(--ink)}.card--lutheria .card-eyebrow,.card--lutheria .card-title em{color:#8ab87a}.card--lutheria .card-meta-item::before{content:'—';color:#8ab87a}.card--lutheria .card-cta{border-color:#8ab87a;color:#8ab87a}.card--lutheria .card-cta::before{background:#8ab87a}.card--lutheria .card-cta:hover{color:var(--ink)}.card--lutheria .card-cta:not(:hover){animation:g4 3s ease-in-out infinite}
+    @keyframes g4{0%,100%{box-shadow:0 0 4px rgba(138,184,122,.1)}50%{box-shadow:0 0 14px rgba(138,184,122,.4)}}
+
+    .card--pintura .card-tag{background:rgba(122,138,184,.2);color:#aab4d8;border:1px solid rgba(122,138,184,.28)}.card--pintura .card-eyebrow,.card--pintura .card-title em{color:#7a8ab8}.card--pintura .card-meta-item::before{content:'—';color:#7a8ab8}.card--pintura .card-cta{border-color:#7a8ab8;color:#7a8ab8}.card--pintura .card-cta::before{background:#7a8ab8}.card--pintura .card-cta:hover{color:var(--cream)}.card--pintura .card-cta:not(:hover){animation:g5 3s ease-in-out infinite}
+    @keyframes g5{0%,100%{box-shadow:0 0 4px rgba(122,138,184,.1)}50%{box-shadow:0 0 14px rgba(122,138,184,.4)}}
+
+    .card--desenho .card-tag{background:rgba(180,160,120,.2);color:#d4c09a;border:1px solid rgba(180,160,120,.28)}.card--desenho .card-eyebrow,.card--desenho .card-title em{color:#c4aa7a}.card--desenho .card-image-soon{color:#c4aa7a}.card--desenho .card-meta-item::before{content:'—';color:#c4aa7a}.card--desenho .card-cta{border-color:#c4aa7a;color:#c4aa7a}.card--desenho .card-cta::before{background:#c4aa7a}.card--desenho .card-cta:hover{color:var(--ink)}.card--desenho .card-cta:not(:hover){animation:g6 3s ease-in-out infinite}
+    @keyframes g6{0%,100%{box-shadow:0 0 4px rgba(196,170,122,.1)}50%{box-shadow:0 0 14px rgba(196,170,122,.4)}}
+
+    .card--ingles .card-tag{background:rgba(90,160,155,.2);color:#8dd4ce;border:1px solid rgba(90,160,155,.28)}.card--ingles .card-eyebrow,.card--ingles .card-title em{color:#6ab8b2}.card--ingles .card-image-soon{color:#6ab8b2}.card--ingles .card-meta-item::before{content:'—';color:#6ab8b2}.card--ingles .card-cta{border-color:#6ab8b2;color:#6ab8b2}.card--ingles .card-cta::before{background:#6ab8b2}.card--ingles .card-cta:hover{color:var(--ink)}.card--ingles .card-cta:not(:hover){animation:g7 3s ease-in-out infinite}
+    @keyframes g7{0%,100%{box-shadow:0 0 4px rgba(106,184,178,.1)}50%{box-shadow:0 0 14px rgba(106,184,178,.4)}}
+
+    /* ── MOBILE ── */
+    .mobile-cards { display: none; }
+    .mobile-card-item { background: var(--charcoal); border-bottom: 1px solid rgba(255,255,255,0.06); overflow: hidden; }
+    .mobile-card-item .card { flex: none; width: 100%; min-width: unset; border-right: none; pointer-events: all; }
+    .mobile-card-item .card-cta { pointer-events: all; }
+    .mobile-card-item.hidden-card { display: none; }
+    .mobile-card-item.peek-card { position: relative; }
+    .mobile-card-item.peek-card::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 55%; background: linear-gradient(to bottom, transparent, rgba(43,36,32,0.96)); pointer-events: none; z-index: 2; }
+    .mobile-ver-mais { display: flex; flex-direction: column; align-items: center; gap: 0.8rem; padding: 1.8rem 0; background: var(--charcoal); border: none; width: 100%; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.06); transition: background 0.3s; }
+    .mobile-ver-mais:hover { background: #332a26; }
+    .mobile-mais-em-breve { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; padding: 2.5rem 0; background: var(--charcoal); }
+    .mobile-mais-em-breve-text { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; font-weight: 300; color: rgba(245,240,232,0.35); letter-spacing: 0.08em; }
+    .mobile-mais-em-breve-emoji { font-family: 'Cormorant Garamond', serif; font-size: 1.4rem; font-style: italic; color: var(--gold); opacity: 0.7; }
+    .mobile-ver-mais-icon { width: 36px; height: 36px; border: 1px solid var(--gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--gold); animation: peekPulse 2s ease-in-out infinite; }
+    .mobile-ver-mais-label { font-size: 0.63rem; letter-spacing: 0.28em; text-transform: uppercase; color: var(--gold); }
+
+    /* ── ATELIER ── */
+    .atelier-section { background: var(--charcoal); padding: 6rem 0 0; }
+    .atelier-section .section-header h2 { color: var(--cream); }
+    .atelier-section .section-header p { color: rgba(245,240,232,0.38); }
+    .gallery-grid { display: grid; grid-template-columns: repeat(3,1fr); grid-template-rows: 280px 280px; gap: 3px; padding: 0 6vw; }
+    .gallery-item { overflow: hidden; position: relative; background: #3a2a22; }
+    .gallery-item:first-child { grid-column: 1/3; }
+    .gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s ease; }
+    .gallery-item:hover img { transform: scale(1.05); }
+    .gallery-placeholder { width: 100%; height: 100%; display: flex; align-items: flex-end; padding: 1.4rem; background: linear-gradient(135deg,#2b1f1a,#4a3020); }
+    .gallery-placeholder span { font-family: 'Cormorant Garamond', serif; font-size: 0.88rem; font-style: italic; color: rgba(245,240,232,0.28); }
+
+    /* CTA banner */
+    .cta-banner { background: var(--charcoal); padding: 5rem 8vw; display: flex; align-items: center; justify-content: space-between; gap: 3rem; border-top: 1px solid rgba(255,255,255,0.06); }
+    .cta-banner-text h3 { font-family: 'Cormorant Garamond', serif; font-size: clamp(1.8rem,3.5vw,2.8rem); font-weight: 300; color: var(--cream); line-height: 1.3; }
+    .cta-banner-text h3 em { font-style: italic; color: var(--clay); }
+    .cta-banner-text p { font-size: 0.84rem; color: rgba(245,240,232,0.42); margin-top: 0.8rem; line-height: 1.85; max-width: 420px; }
+    .cta-banner-btn { flex-shrink: 0; display: inline-block; padding: 1.1rem 3rem; border: 1px solid var(--gold); color: var(--gold); font-family: 'Jost', sans-serif; font-size: 0.73rem; font-weight: 500; letter-spacing: 0.28em; text-transform: uppercase; text-decoration: none; transition: all 0.3s ease; position: relative; overflow: hidden; white-space: nowrap; }
+    .cta-banner-btn::before { content: ''; position: absolute; inset: 0; background: var(--gold); transform: translateX(-100%); transition: transform 0.35s ease; z-index: 0; }
+    .cta-banner-btn:hover::before { transform: translateX(0); }
+    .cta-banner-btn:hover { color: var(--ink); }
+    .cta-banner-btn span { position: relative; z-index: 1; }
+
+    /* ── CONTACT / FAQ ── */
+    .contact-section { background: var(--parchment); padding: 6rem 10vw; }
+    .contact-section .section-header h2 { color: var(--charcoal); }
+    .contact-section .section-header p { color: var(--muted); }
+    .contact-section .section-header h2 span { color: var(--clay); }
+    .contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6rem; margin-top: 4rem; }
+    .contact-info h3, .faq h3 { font-family: 'Cormorant Garamond', serif; font-size: 1.45rem; font-weight: 400; color: var(--charcoal); margin-bottom: 1.5rem; }
+    .contact-item { display: flex; gap: 1rem; align-items: flex-start; margin-bottom: 1.5rem; }
+    .contact-icon { width: 34px; height: 34px; border: 1px solid var(--clay); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--clay); }
+    .contact-item-text strong { display: block; font-size: 0.68rem; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--terracotta); margin-bottom: 0.3rem; }
+    .contact-item-text span, .contact-item-text a { font-size: 0.88rem; color: var(--muted); line-height: 1.7; }
+    .contact-item-text a { color: var(--terracotta); text-decoration: none; }
+    .contact-item-text a:hover { text-decoration: underline; }
+    .faq-item { border-bottom: 1px solid rgba(156,92,56,.18); padding: 1.1rem 0; cursor: pointer; }
+    .faq-q { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+    .faq-q p { font-size: 0.88rem; color: var(--charcoal); line-height: 1.5; }
+    .faq-chevron { flex-shrink: 0; color: var(--clay); transition: transform 0.3s ease; }
+    .faq-item.open .faq-chevron { transform: rotate(180deg); }
+    .faq-a { font-size: 0.82rem; color: var(--muted); line-height: 1.85; max-height: 0; overflow: hidden; transition: max-height 0.4s ease, padding 0.3s ease; }
+    .faq-item.open .faq-a { max-height: 200px; padding-top: 0.85rem; }
+
+    /* ── AULAS ONLINE ── */
+    .online-section {
+      background: #0f0c0a;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      height: 420px;
+      overflow: hidden;
+      position: relative;
+    }
+    .online-images {
+      grid-column: 1;
+      grid-row: 1;
+      overflow: hidden;
+      position: relative;
+      height: 420px;
+    }
+    .online-images img {
+      width: 100%; height: 100%;
+      object-fit: cover; object-position: center;
+      transition: transform 0.8s cubic-bezier(0.25,0.46,0.45,0.94);
+      filter: brightness(0.88) saturate(1.05);
+      display: block;
+    }
+    .online-images:hover img { transform: scale(1.03); }
+
+    /* Text content */
+    .online-content {
+      grid-column: 2; grid-row: 1;
+      display: flex; flex-direction: column; justify-content: center;
+      padding: 3.5rem 3rem 3.5rem 4rem;
+      position: relative;
+    }
+    .online-content::before {
+      content: '';
+      position: absolute; left: 0; top: 12%; bottom: 12%;
+      width: 1px;
+      background: linear-gradient(to bottom, transparent, rgba(200,151,90,0.4), transparent);
+    }
+
+    .online-badge {
+      font-size: 0.6rem; letter-spacing: 0.3em; text-transform: uppercase;
+      color: var(--gold); border: 1px solid rgba(184,149,90,0.4);
+      padding: 0.28rem 0.75rem; align-self: flex-start;
+      margin-bottom: 2rem;
+      animation: badgePulse 3s ease-in-out infinite;
+    }
+    @keyframes badgePulse {
+      0%,100% { box-shadow: 0 0 0 rgba(184,149,90,0); }
+      50% { box-shadow: 0 0 14px rgba(184,149,90,0.3); }
+    }
+
+    .online-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(2rem, 3.5vw, 3.4rem);
+      font-weight: 300; line-height: 1.15;
+      margin-bottom: 1.8rem;
+      color: #e8d5b0;
+      letter-spacing: 0.02em;
+    }
+    .online-title em {
+      font-style: italic;
+      color: var(--gold);
+      font-weight: 400;
+    }
+
+    .online-sub {
+      font-size: 0.86rem; line-height: 1.9;
+      color: rgba(245,240,232,0.46); max-width: 360px;
+      margin-bottom: 2rem;
+    }
+
+    .online-modalities { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2.5rem; }
+    .online-modality { display: flex; align-items: flex-start; gap: 1rem; }
+    .online-modality-icon { font-size: 0.9rem; color: var(--gold); opacity: 0.55; margin-top: 0.15rem; flex-shrink: 0; }
+    .online-modality strong { display: block; font-size: 0.75rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(245,240,232,0.78); margin-bottom: 0.2rem; }
+    .online-modality span { font-size: 0.78rem; color: rgba(245,240,232,0.36); line-height: 1.6; }
+
+    .online-cta {
+      display: inline-flex; align-items: center; gap: 0.7rem;
+      align-self: flex-start; padding: 1rem 2.5rem;
+      border: 1px solid var(--gold); color: var(--gold);
+      font-family: 'Jost', sans-serif; font-size: 0.72rem; font-weight: 500;
+      letter-spacing: 0.26em; text-transform: uppercase;
+      text-decoration: none; transition: all 0.35s ease;
+      position: relative; overflow: hidden;
+    }
+    .online-cta::before { content: ''; position: absolute; inset: 0; background: var(--gold); transform: translateX(-100%); transition: transform 0.35s ease; z-index: 0; }
+    .online-cta:hover::before { transform: translateX(0); }
+    .online-cta:hover { color: var(--ink); }
+    .online-cta:hover .online-cta-spark { animation: ctaSpark 0.6s ease forwards; }
+    .online-cta-spark {
+      position: absolute; inset: 0; pointer-events: none;
+      background: linear-gradient(90deg, transparent, rgba(255,220,100,0.35), transparent);
+      background-size: 200%; opacity: 0;
+    }
+    .online-cta span, .online-cta svg { position: relative; z-index: 1; }
+    @keyframes ctaSpark {
+      0% { opacity: 0; background-position: -100%; }
+      40% { opacity: 1; }
+      100% { opacity: 0; background-position: 200%; }
+    }
+
+    /* Mobile: hide desktop image, show single feature image */
+    .online-mobile-img { display: none; }
+    @media (max-width: 768px) {
+      .online-section { grid-template-columns: 1fr; min-height: unset; }
+      .online-images { display: none; }
+      .online-mobile-img { display: block; width: 100%; height: 55vw; overflow: hidden; grid-column: 1; grid-row: 1; }
+      .online-mobile-img img { width: 100%; height: 100%; object-fit: cover; object-position: center; filter: brightness(0.88); }
+      .online-content { grid-column: 1; grid-row: 2; padding: 3.5rem 1.5rem 4rem; }
+      .online-content::before { display: none; }
+      .online-cta { align-self: stretch; text-align: center; justify-content: center; }
+    }
+
+    /* ── FEEDBACK ── */
+    .feedback-section { background: var(--ink); padding: 5rem 10vw; border-top: 1px solid rgba(255,255,255,0.06); }
+    .feedback-inner { max-width: 600px; margin: 0 auto; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 1.2rem; }
+    .feedback-eyebrow { font-size: 0.68rem; letter-spacing: 0.32em; text-transform: uppercase; color: rgba(245,240,232,0.35); }
+    .feedback-title { font-family: 'Cormorant Garamond', serif; font-size: clamp(1.5rem, 2.8vw, 2.2rem); font-weight: 300; color: var(--cream); line-height: 1.4; }
+    .feedback-sub { font-size: 0.84rem; color: rgba(245,240,232,0.38); line-height: 1.8; }
+    .feedback-btn {
+      display: inline-flex; align-items: center; gap: 0.75rem;
+      margin-top: 0.8rem; padding: 1rem 2.5rem;
+      border: 1px solid rgba(184,149,90,0.5); color: var(--gold);
+      font-family: 'Jost', sans-serif; font-size: 0.72rem; font-weight: 500;
+      letter-spacing: 0.24em; text-transform: uppercase; text-decoration: none;
+      transition: all 0.3s ease; position: relative; overflow: hidden;
+    }
+    .feedback-btn::before { content: ''; position: absolute; inset: 0; background: var(--gold); transform: translateX(-100%); transition: transform 0.35s ease; z-index: 0; }
+    .feedback-btn:hover::before { transform: translateX(0); }
+    .feedback-btn:hover { color: var(--ink); border-color: var(--gold); }
+    .feedback-btn svg, .feedback-btn span { position: relative; z-index: 1; }
+
+    /* ── FOOTER ── */
+    footer { background: var(--ink); padding: 3.5rem 10vw; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem; }
+    .footer-brand { font-family: 'Cormorant Garamond', serif; font-size: 1.55rem; font-weight: 300; color: var(--cream); }
+    .footer-brand em { color: var(--gold); font-style: italic; }
+    .footer-info { font-size: 0.74rem; color: rgba(245,240,232,0.3); line-height: 1.9; text-align: right; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ── MOBILE OVERRIDES ── */
+    @media (max-width: 768px) {
+      .hero-img { max-height: 65vw; }
+      .hero-cta-bar { bottom: 1rem; }
+      .hero-cta-btn { font-size: 0.65rem; padding: 0.75rem 1.6rem; }
+      .about-strip { padding: 3.5rem 1.5rem; }
+      .carousel-outer { display: none; }
+      .mobile-cards { display: block; }
+      .gallery-grid { grid-template-columns: 1fr 1fr; grid-template-rows: 180px 180px 180px; }
+      .gallery-item:first-child { grid-column: 1/3; }
+      .cta-banner { flex-direction: column; padding: 3.5rem 1.5rem; text-align: center; }
+      .cta-banner-text p { max-width: 100%; }
+      .contact-section { padding: 4rem 1.5rem; }
+      .contact-grid { grid-template-columns: 1fr; gap: 3rem; margin-top: 3rem; }
+      footer { flex-direction: column; text-align: center; padding: 3rem 2rem; }
+      .footer-info { text-align: center; }
+      /* Scroll zoom: images start slightly zoomed, scale back as card enters view */
+      .mobile-card-item .card-image { overflow: hidden; }
+      .mobile-card-item .card-image img {
+        transform: scale(1.1);
+        transition: transform 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      }
+      .mobile-card-item.in-view .card-image img { transform: scale(1); }
+    }
+    @media (min-width: 769px) { .mobile-cards { display: none !important; } }
+  </style>
+</head>
+<body>
+
+<!-- HERO -->
+<header class="hero">
+  <img class="hero-img" src="https://i.imgur.com/kxwLT3R.jpeg" alt="Studio Apollo"/>
+  <div class="hero-overlay"></div>
+  <div class="hero-cta-bar"><a class="hero-cta-btn" href="#cursos">Ver aulas disponíveis ↓</a></div>
+</header>
+
+<!-- SOBRE -->
+<section class="about-strip">
+  <p class="about-text">
+    O <strong>Studio Apollo</strong> é um espaço dedicado a formação de novos artistas, localizado em Brasília.
+    Oferecemos aulas de <strong>escultura</strong>, <strong>cerâmica</strong>, <strong>desenho e pintura</strong>, <strong>lutheria</strong> entre outros:
+    para quem deseja desenvolver uma relação profunda com a arte, a beleza e o espírito artístico.
+  </p>
+</section>
+
+<!-- CURSOS -->
+<section class="courses-section" id="cursos">
+  <div class="section-header">
+    <p>O que oferecemos</p>
+    <h2>Nossas <span>Aulas</span></h2>
+  </div>
+
+  <!-- DESKTOP carousel -->
+  <div class="carousel-outer" id="carouselOuter">
+    <div class="carousel-progress"><div class="carousel-progress-fill" id="progressFill"></div></div>
+    <div class="carousel-track" id="carouselTrack">
+
+      <!-- 01 Escultura -->
+      <div class="card card--escultura">
+        <div class="card-image"><img src="https://i.imgur.com/FgRJk9y.jpeg" alt="Escultura"/><span class="card-number">01</span><div class="card-tags"><span class="card-tag">Presencial</span></div></div>
+        <div class="card-body"><p class="card-eyebrow">Com Renato Santos</p><h3 class="card-title">Aulas de<br><em>Escultura</em></h3><p class="card-desc">Do modelado em argila à construção tridimensional. Técnicas clássicas em ambiente criativo e acolhedor.</p><div class="card-meta"><span class="card-meta-item">Turmas abertas todo mês</span><span class="card-meta-item">Todos os níveis</span></div><a class="card-cta" href="https://tally.so/r/kdKWZo" target="_blank"><span>Inscrever-se</span></a></div>
+      </div>
+
+      <!-- 02 Modelo Vivo -->
+      <div class="card card--modelo">
+        <div class="card-image"><img src="https://i.imgur.com/Ik4Nphk.jpeg" alt="Modelo Vivo"/><span class="card-number">02</span><div class="card-tags"><span class="card-tag tag-presencial">Presencial</span><span class="card-tag tag-idade">+18</span></div></div>
+        <div class="card-body"><p class="card-eyebrow">Com Renato Santos</p><h3 class="card-title">Escultura com<br><em>Modelo Vivo</em></h3><p class="card-desc">Sessões intensivas com modelo humano ao vivo. Essencial para dominar a representação anatômica.</p><div class="card-meta"><span class="card-meta-item">Sessões mensais</span><span class="card-meta-item">Vagas limitadas</span></div><a class="card-cta" href="https://tally.so/r/dWKAqo" target="_blank"><span>Inscrever-se</span></a></div>
+      </div>
+
+      <!-- 03 Cerâmica -->
+      <div class="card card--ceramica">
+        <div class="card-image"><img src="https://i.imgur.com/Kh6pnZq.jpeg" alt="Cerâmica"/><span class="card-number">03</span><div class="card-tags"><span class="card-tag">Presencial</span></div></div>
+        <div class="card-body"><p class="card-eyebrow">Studio Apollo</p><h3 class="card-title">Aulas de<br><em>Cerâmica</em></h3><p class="card-desc">A arte de moldar a argila com as mãos. Da peça utilitária à escultura decorativa.</p><div class="card-meta"><span class="card-meta-item">Turmas abertas</span><span class="card-meta-item">Todos os níveis</span></div><a class="card-cta" href="https://tally.so/r/PdvEax" target="_blank"><span>Inscrever-se</span></a></div>
+      </div>
+
+      <!-- 04 Lutheria -->
+      <div class="card card--lutheria">
+        <div class="card-image"><img src="https://i.imgur.com/r77SXwQ.jpeg" alt="Lutheria"/><span class="card-number">04</span><div class="card-tags"><span class="card-tag">Presencial</span></div></div>
+        <div class="card-body"><p class="card-eyebrow">Com Gabriel Rodrigues</p><h3 class="card-title">Lutheria<br><em>Clássica</em></h3><p class="card-desc">A arte de construir instrumentos com as próprias mãos. Cavaquinho, bandolim, rabeca e violão.</p><div class="card-meta"><span class="card-meta-item">Turmas abertas</span><span class="card-meta-item">Todos os níveis</span></div><a class="card-cta" href="https://tally.so/r/PdvXJ0" target="_blank"><span>Inscrever-se</span></a></div>
+      </div>
+
+      <!-- 05 Pintura -->
+      <div class="card card--pintura">
+        <div class="card-image"><img src="https://i.imgur.com/QSKHHjh.jpeg" alt="Pintura"/><span class="card-number">05</span><div class="card-tags"><span class="card-tag">Em breve</span></div></div>
+        <div class="card-body"><p class="card-eyebrow">Studio Apollo</p><h3 class="card-title">Aulas de<br><em>Pintura</em></h3><p class="card-desc">Técnicas clássicas — acrílica, aquarela e óleo. Do estudo da cor à composição pictórica.</p><div class="card-meta"><span class="card-meta-item">Turmas em formação</span><span class="card-meta-item">Cadastre seu interesse</span></div><a class="card-cta" href="https://tally.so/r/vGEBQ4" target="_blank"><span>Inscrever-se</span></a></div>
+      </div>
+
+      <!-- 06 Desenho — Em Breve banner -->
+      <div class="card card--desenho">
+        <div class="card-image">
+          <div class="card-image-soon" style="background:linear-gradient(150deg,#252015,#3a2e18)">
+            <span class="card-image-soon-badge">Em breve</span>
+            <span class="card-image-soon-title">Desenho<br>Clássico</span>
+          </div>
+          <span class="card-number">06</span><div class="card-tags"><span class="card-tag">Em breve</span></div>
+        </div>
+        <div class="card-body"><p class="card-eyebrow">Studio Apollo</p><h3 class="card-title">Aulas de<br><em>Desenho</em></h3><p class="card-desc">Fundamentos clássicos — proporção, luz, sombra e observação. A base de toda expressão visual.</p><div class="card-meta"><span class="card-meta-item">Turmas em formação</span><span class="card-meta-item">Cadastre seu interesse</span></div><a class="card-cta" href="https://wa.me/5561999918434?text=Ol%C3%A1%2C%20gostaria%20de%20ser%20avisado%20quando%20estiverem%20dispon%C3%ADveis%20as%20aulas%20de%20desenho" target="_blank"><span>Quero ser avisado</span></a></div>
+      </div>
+
+      <!-- 07 Inglês — Em Breve banner -->
+      <div class="card card--ingles">
+        <div class="card-image">
+          <div class="card-image-soon" style="background:linear-gradient(150deg,#102020,#1a3230)">
+            <span class="card-image-soon-badge">Em breve</span>
+            <span class="card-image-soon-title">Inglês para<br>Artistas</span>
+          </div>
+          <span class="card-number">07</span><div class="card-tags"><span class="card-tag">Em breve</span></div>
+        </div>
+        <div class="card-body"><p class="card-eyebrow">Studio Apollo</p><h3 class="card-title">Inglês para<br><em>Artistas</em></h3><p class="card-desc">Vocabulário técnico e comunicação para o mundo das artes internacionais. Para quem quer ir além.</p><div class="card-meta"><span class="card-meta-item">Turmas em formação</span><span class="card-meta-item">Cadastre seu interesse</span></div><a class="card-cta" href="https://wa.me/5561999918434?text=Ol%C3%A1%2C%20gostaria%20de%20ser%20avisado%20quando%20estiverem%20dispon%C3%ADveis%20as%20aulas%20de%20ingl%C3%AAs%20para%20artistas" target="_blank"><span>Quero ser avisado</span></a></div>
+      </div>
+
+      <!-- inline ghost card at end of track -->
+      <div class="carousel-end-ghost">
+        <div class="carousel-end-ghost-inner">
+          <div class="carousel-end-ghost-line"></div>
+          <span class="carousel-end-ghost-text">Mais em breve</span>
+          <div class="carousel-end-ghost-line"></div>
+        </div>
+      </div>
+
+    </div><!-- /track -->
+
+    <div class="carousel-peek" id="carouselPeek">
+      <div class="carousel-peek-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
+      <span class="carousel-peek-text">ver mais<br>cursos</span>
+    </div>
+  </div>
+
+  <!-- MOBILE vertical list -->
+  <div class="mobile-cards" id="mobileCards">
+    <div class="mobile-card-item">
+      <div class="card card--escultura"><div class="card-image"><img src="https://i.imgur.com/FgRJk9y.jpeg" alt="Escultura"/><span class="card-number">01</span><div class="card-tags"><span class="card-tag">Presencial</span></div></div><div class="card-body"><p class="card-eyebrow">Com Renato Santos</p><h3 class="card-title">Aulas de<br><em>Escultura</em></h3><p class="card-desc">Do modelado em argila à construção tridimensional. Técnicas clássicas em ambiente criativo.</p><div class="card-meta"><span class="card-meta-item">Turmas abertas todo mês</span><span class="card-meta-item">Todos os níveis</span></div><a class="card-cta" href="https://tally.so/r/kdKWZo" target="_blank"><span>Inscrever-se</span></a></div></div>
+    </div>
+    <div class="mobile-card-item">
+      <div class="card card--modelo"><div class="card-image"><img src="https://i.imgur.com/Ik4Nphk.jpeg" alt="Modelo Vivo"/><span class="card-number">02</span><div class="card-tags"><span class="card-tag tag-presencial">Presencial</span><span class="card-tag tag-idade">+18</span></div></div><div class="card-body"><p class="card-eyebrow">Com Renato Santos</p><h3 class="card-title">Escultura com<br><em>Modelo Vivo</em></h3><p class="card-desc">Sessões intensivas com modelo humano ao vivo.</p><div class="card-meta"><span class="card-meta-item">Sessões mensais</span><span class="card-meta-item">Vagas limitadas</span></div><a class="card-cta" href="https://tally.so/r/dWKAqo" target="_blank"><span>Inscrever-se</span></a></div></div>
+    </div>
+    <div class="mobile-card-item">
+      <div class="card card--ceramica"><div class="card-image"><img src="https://i.imgur.com/Kh6pnZq.jpeg" alt="Cerâmica"/><span class="card-number">03</span><div class="card-tags"><span class="card-tag">Presencial</span></div></div><div class="card-body"><p class="card-eyebrow">Studio Apollo</p><h3 class="card-title">Aulas de<br><em>Cerâmica</em></h3><p class="card-desc">A arte de moldar a argila com as mãos.</p><div class="card-meta"><span class="card-meta-item">Turmas abertas</span><span class="card-meta-item">Todos os níveis</span></div><a class="card-cta" href="https://tally.so/r/PdvEax" target="_blank"><span>Inscrever-se</span></a></div></div>
+    </div>
+    <!-- card 4 with peek fade -->
+    <div class="mobile-card-item peek-card">
+      <div class="card card--lutheria"><div class="card-image"><img src="https://i.imgur.com/r77SXwQ.jpeg" alt="Lutheria"/><span class="card-number">04</span><div class="card-tags"><span class="card-tag">Presencial</span></div></div><div class="card-body"><p class="card-eyebrow">Com Gabriel Rodrigues</p><h3 class="card-title">Lutheria<br><em>Clássica</em></h3><p class="card-desc">A arte de construir instrumentos com as próprias mãos.</p><div class="card-meta"><span class="card-meta-item">Turmas abertas</span></div><a class="card-cta" href="https://tally.so/r/PdvXJ0" target="_blank"><span>Inscrever-se</span></a></div></div>
+    </div>
+
+    <button class="mobile-ver-mais" id="mobileVerMais">
+      <div class="mobile-ver-mais-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div>
+      <span class="mobile-ver-mais-label">ver mais cursos</span>
+    </button>
+
+    <div class="mobile-card-item hidden-card">
+      <div class="card card--pintura"><div class="card-image"><img src="https://i.imgur.com/QSKHHjh.jpeg" alt="Pintura"/><span class="card-number">05</span><div class="card-tags"><span class="card-tag">Em breve</span></div></div><div class="card-body"><p class="card-eyebrow">Studio Apollo</p><h3 class="card-title">Aulas de<br><em>Pintura</em></h3><p class="card-desc">Técnicas clássicas — acrílica, aquarela e óleo.</p><div class="card-meta"><span class="card-meta-item">Turmas em formação</span></div><a class="card-cta" href="https://tally.so/r/vGEBQ4" target="_blank"><span>Inscrever-se</span></a></div></div>
+    </div>
+    <div class="mobile-card-item hidden-card">
+      <div class="card card--desenho"><div class="card-image"><div class="card-image-soon" style="background:linear-gradient(150deg,#252015,#3a2e18)"><span class="card-image-soon-badge">Em breve</span><span class="card-image-soon-title">Desenho<br>Clássico</span></div><span class="card-number">06</span><div class="card-tags"><span class="card-tag">Em breve</span></div></div><div class="card-body"><p class="card-eyebrow">Studio Apollo</p><h3 class="card-title">Aulas de<br><em>Desenho</em></h3><p class="card-desc">Fundamentos clássicos — proporção, luz, sombra e observação.</p><div class="card-meta"><span class="card-meta-item">Turmas em formação</span></div><a class="card-cta" href="https://wa.me/5561999918434?text=Ol%C3%A1%2C%20gostaria%20de%20ser%20avisado%20quando%20estiverem%20dispon%C3%ADveis%20as%20aulas%20de%20desenho" target="_blank"><span>Quero ser avisado</span></a></div></div>
+    </div>
+    <div class="mobile-card-item hidden-card">
+      <div class="card card--ingles"><div class="card-image"><div class="card-image-soon" style="background:linear-gradient(150deg,#102020,#1a3230)"><span class="card-image-soon-badge">Em breve</span><span class="card-image-soon-title">Inglês para<br>Artistas</span></div><span class="card-number">07</span><div class="card-tags"><span class="card-tag">Em breve</span></div></div><div class="card-body"><p class="card-eyebrow">Studio Apollo</p><h3 class="card-title">Inglês para<br><em>Artistas</em></h3><p class="card-desc">Vocabulário técnico para o mundo das artes internacionais.</p><div class="card-meta"><span class="card-meta-item">Turmas em formação</span></div><a class="card-cta" href="https://wa.me/5561999918434?text=Ol%C3%A1%2C%20gostaria%20de%20ser%20avisado%20quando%20estiverem%20dispon%C3%ADveis%20as%20aulas%20de%20ingl%C3%AAs%20para%20artistas" target="_blank"><span>Quero ser avisado</span></a></div></div>
+    </div>
+
+    <!-- Mobile: mais em breve -->
+    <div class="mobile-mais-em-breve hidden-card" id="mobileMaisEmBreve">
+      <span class="mobile-mais-em-breve-text">Mais em breve</span>
+    </div>
+  </div>
+</section>
+
+<!-- AULAS ONLINE -->
+<section class="online-section">
+  <div class="online-images">
+    <!-- Substitua o src abaixo pelo link direto da imagem do álbum https://imgur.com/a/kxjHqSM (ex: https://i.imgur.com/XXXXX.jpeg) -->
+    <img src="https://i.imgur.com/Mj2pCwZ.jpeg" alt="Aulas Online"/>
+  </div>
+  <div class="online-content">
+    <span class="online-badge">Nova Modalidade</span>
+    <h2 class="online-title">Aulas de Escultura<br><em>Online</em></h2>
+    <p class="online-sub">Aprenda a arte da escultura no conforto de sua casa, com o mesmo rigor e atenção das aulas presenciais.</p>
+    <div class="online-modalities">
+      <div class="online-modality">
+        <span class="online-modality-icon">◇</span>
+        <div><strong>Argila</strong><span>Modelagem clássica com argila natural</span></div>
+      </div>
+      <div class="online-modality">
+        <span class="online-modality-icon">◈</span>
+        <div><strong>Isopor</strong><span>Escultura com isopor de alta densidade</span></div>
+      </div>
+    </div>
+    <a class="online-cta" href="https://aulasonlinestudioapollo.netlify.app" target="_blank">
+      <div class="online-cta-spark"></div>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      <span>Inscrever-se</span>
+    </a>
+  </div>
+  <!-- Mobile: only feature image -->
+  <div class="online-mobile-img">
+    <img src="https://i.imgur.com/Mj2pCwZ.jpeg" alt="Aulas Online"/>
+  </div>
+</section>
+
+<!-- ATELIÊ -->
+<section class="atelier-section">
+  <div class="section-header">
+    <p>Conheça o espaço</p>
+    <h2>Mais sobre o <span>Studio</span></h2>
+  </div>
+  <div class="gallery-grid">
+    <div class="gallery-item"><div class="gallery-placeholder"><span>Obras do ateliê</span></div></div>
+    <div class="gallery-item"><div class="gallery-placeholder"><span>Trabalhos dos alunos</span></div></div>
+    <div class="gallery-item"><div class="gallery-placeholder"><span>O espaço</span></div></div>
+    <div class="gallery-item"><div class="gallery-placeholder"><span>Argila em detalhe</span></div></div>
+    <div class="gallery-item"><div class="gallery-placeholder"><span>Escultura em processo</span></div></div>
+  </div>
+  <div class="cta-banner">
+    <div class="cta-banner-text">
+      <h3>Pronto para criar com<br><em>as próprias mãos?</em></h3>
+      <p>Turmas pequenas, ambiente acolhedor e aprendizado para toda a vida. Venha conhecer o Studio Apollo.</p>
+    </div>
+    <a class="cta-banner-btn" href="#cursos"><span>Quero fazer aulas ↑</span></a>
+  </div>
+</section>
+
+<!-- CONTATO / FAQ -->
+<section class="contact-section">
+  <div class="section-header" style="padding-bottom:0">
+    <p>Ainda tem dúvidas?</p>
+    <h2>Fale <span>Conosco</span></h2>
+  </div>
+  <div class="contact-grid">
+    <div class="contact-info">
+      <h3>Informações de contato</h3>
+      <div class="contact-item">
+        <div class="contact-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
+        <div class="contact-item-text"><strong>Endereço</strong><span>Studio Apollo — Guará 2, Brasília, DF</span></div>
+      </div>
+      <div class="contact-item">
+        <div class="contact-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.12 1.2 2 2 0 012.11 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.09a16 16 0 006 6l.46-.46a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg></div>
+        <div class="contact-item-text"><strong>WhatsApp</strong><span><a href="https://wa.me/5561999918434">+55 (61) 9991-8434</a></span></div>
+      </div>
+      <div class="contact-item">
+        <div class="contact-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg></div>
+        <div class="contact-item-text"><strong>Instagram</strong><span><a href="https://instagram.com/apolloacademy.art" target="_blank">@apolloacademy.art</a></span></div>
+      </div>
+    </div>
+    <div class="faq">
+      <h3>Perguntas frequentes</h3>
+      <div class="faq-item"><div class="faq-q"><p>Preciso ter experiência prévia?</p><svg class="faq-chevron" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div><div class="faq-a">Não! Recebemos alunos de todos os níveis. O ensino é personalizado ao ritmo de cada um.</div></div>
+      <div class="faq-item"><div class="faq-q"><p>Quais materiais preciso trazer?</p><svg class="faq-chevron" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div><div class="faq-a">O Studio fornece ferramentas e materiais com condições especiais para alunos matriculados que desejem comprar conosco. Nas primeiras aulas o essencial é fornecido.</div></div>
+      <div class="faq-item"><div class="faq-q"><p>As aulas são individuais ou em grupo?</p><svg class="faq-chevron" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div><div class="faq-a">Turmas pequenas para garantir atenção individual. Aulas particulares devem ser acordadas diretamente com os respectivos professores — entre em contato para mais informações.</div></div>
+      <div class="faq-item"><div class="faq-q"><p>Como funcionam os planos e pagamentos?</p><svg class="faq-chevron" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div><div class="faq-a">Planos mensais, semestrais e anuais com condições especiais. Após a inscrição você recebe todas as informações pela nossa equipe. Sinta-se à vontade para entrar em contato conosco e visitar o Studio. Para aulas experimentais, entre em contato.</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="feedback-section">
+  <div class="feedback-inner">
+    <p class="feedback-eyebrow">Sua opinião importa</p>
+    <h3 class="feedback-title">Tem alguma sugestão para o Studio<br>e nossa Página Web?</h3>
+    <p class="feedback-sub">Compartilhe conosco seu feedback — adoramos ouvir.</p>
+    <a class="feedback-btn" href="https://wa.me/5561999918434?text=Ol%C3%A1%2C%20tenho%20um%20feedback%20para%20o%20Studio%20Apollo%20e%20a%20p%C3%A1gina%20web%3A%20" target="_blank">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.136.561 4.14 1.535 5.874L.057 23.882a.5.5 0 00.614.657l6.29-1.649A11.946 11.946 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.956 9.956 0 01-5.17-1.445l-.36-.214-3.733.979.994-3.62-.235-.374A9.956 9.956 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+      <span>Enviar feedback pelo WhatsApp</span>
+    </a>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-brand">Studio <em>Apollo</em></div>
+  <div class="footer-info">Brasília, DF · @apolloacademy.art<br>Artes plásticas, cerâmica &amp; lutheria</div>
+</footer>
+
+<script>
+(function(){
+  const outer  = document.getElementById('carouselOuter');
+  const track  = document.getElementById('carouselTrack');
+  const fill   = document.getElementById('progressFill');
+  const peek   = document.getElementById('carouselPeek');
+  if (!track) return;
+
+  const cards = Array.from(track.querySelectorAll('.card:not(.carousel-end-ghost .card)'));
+  const N = cards.length;
+  let tx = 0, snapIdx = 0;
+
+  function cw() { return cards[0].getBoundingClientRect().width; }
+  // subtract peek overlay (13vw) from effective width so last card is never under the fade
+  function effectiveW() { return outer.offsetWidth * (1 - 0.13); }
+  function visN() { return Math.max(1, Math.floor(effectiveW() / cw())); }
+  function maxIdx() { return Math.max(0, N - visN()); }
+
+  function updateUI() {
+    const mIdx = maxIdx();
+    const pct = mIdx > 0 ? Math.min(100, (snapIdx / mIdx) * 100) : 100;
+    if (fill) fill.style.width = pct + '%';
+    if (peek) peek.classList.toggle('hide-label', snapIdx > 0);
+  }
+
+  function snapTo(i, animate) {
+    snapIdx = Math.max(0, Math.min(i, maxIdx()));
+    tx = -(snapIdx * cw());
+    track.style.transition = animate
+      ? 'transform 0.42s cubic-bezier(0.25,0.46,0.45,0.94)'
+      : 'none';
+    track.style.transform = `translateX(${tx}px)`;
+    updateUI();
+  }
+
+  track.addEventListener('transitionend', () => { track.style.transition = 'none'; });
+  window.addEventListener('resize', () => snapTo(snapIdx, false));
+  snapTo(0, false);
+
+  // ── DRAG — document-level listeners so links still fire ──
+  let down = false, ox = 0, baseTx = 0;
+  let vel = 0, lastX = 0, lastT = 0;
+  let didDrag = false, rafId = 0;
+
+  outer.addEventListener('pointerdown', e => {
+    if (window.innerWidth <= 768) return;
+    if (e.target.closest('a, button')) return; // let clicks on links/buttons fire normally
+    down = true; didDrag = false;
+    ox = e.clientX; baseTx = tx;
+    vel = 0; lastX = e.clientX; lastT = Date.now();
+    cancelAnimationFrame(rafId);
+    track.style.transition = 'none';
+    outer.style.cursor = 'grabbing';
+    e.preventDefault();
+  });
+
+  document.addEventListener('pointermove', e => {
+    if (!down) return;
+    const dx = e.clientX - ox;
+    if (Math.abs(dx) > 6) didDrag = true;
+    const now = Date.now();
+    const dt = Math.max(1, now - lastT);
+    vel = (e.clientX - lastX) / dt * 16;
+    lastX = e.clientX; lastT = now;
+    let nx = baseTx + dx;
+    const minTx = -(maxIdx() * cw());
+    if (nx > 0)    nx = nx * 0.15;
+    if (nx < minTx) nx = minTx + (nx - minTx) * 0.15;
+    tx = nx;
+    track.style.transform = `translateX(${nx}px)`;
+    const mIdx = maxIdx();
+    if (fill && mIdx > 0) fill.style.width = Math.min(100, Math.max(0, (-tx / (mIdx * cw())) * 100)) + '%';
+  });
+
+  document.addEventListener('pointerup', e => {
+    if (!down) return;
+    down = false;
+    outer.style.cursor = 'grab';
+    if (!didDrag) return;
+    launchMomentum();
+  });
+
+  document.addEventListener('pointercancel', () => {
+    if (!down) return;
+    down = false;
+    outer.style.cursor = 'grab';
+    snapTo(snapIdx, true);
+  });
+
+  function launchMomentum() {
+    cancelAnimationFrame(rafId);
+    const minTx = -(maxIdx() * cw());
+    function frame() {
+      vel *= 0.90;
+      tx += vel;
+      if (tx > 0) { tx *= 0.7; vel *= 0.4; }
+      if (tx < minTx) { tx = minTx + (tx - minTx) * 0.7; vel *= 0.4; }
+      track.style.transform = `translateX(${tx}px)`;
+      const mIdx = maxIdx();
+      if (fill && mIdx > 0) fill.style.width = Math.min(100, Math.max(0, (-tx / (mIdx * cw())) * 100)) + '%';
+      if (Math.abs(vel) > 0.3) {
+        rafId = requestAnimationFrame(frame);
+      } else {
+        const nearest = Math.max(0, Math.min(Math.round(-tx / cw()), maxIdx()));
+        snapTo(nearest, true);
+      }
+    }
+    rafId = requestAnimationFrame(frame);
+  }
+
+  // FAQ
+  document.querySelectorAll('.faq-item').forEach(item => {
+    item.querySelector('.faq-q').addEventListener('click', () => {
+      const open = item.classList.contains('open');
+      document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+      if (!open) item.classList.add('open');
+    });
+  });
+
+  // Mobile scroll zoom via IntersectionObserver
+  if (window.innerWidth <= 768 && 'IntersectionObserver' in window) {
+    const zoomObs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        e.target.classList.toggle('in-view', e.isIntersecting);
+      });
+    }, { threshold: 0.2 });
+    document.querySelectorAll('.mobile-card-item').forEach(el => zoomObs.observe(el));
+  }
+  const mBtn = document.getElementById('mobileVerMais');
+  if (mBtn) {
+    mBtn.addEventListener('click', () => {
+      document.querySelector('.mobile-card-item.peek-card')?.classList.remove('peek-card');
+      document.querySelectorAll('.hidden-card').forEach(c => {
+        c.classList.remove('hidden-card');
+        c.style.animation = 'fadeUp 0.45s ease forwards';
+      });
+      mBtn.style.display = 'none';
+    });
+  }
+})();
+</script>
+</body>
+</html>
